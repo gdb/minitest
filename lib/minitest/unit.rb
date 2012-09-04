@@ -671,6 +671,7 @@ module MiniTest
     @@installed_at_exit ||= false
     @@out = $stdout
     @@after_tests = []
+    @@setup_options = []
 
     ##
     # A simple hook allowing you to run a block of code after _all_ of
@@ -680,6 +681,18 @@ module MiniTest
 
     def self.after_tests &block
       @@after_tests << block
+    end
+
+    ##
+    # A simple hook allowing you to specify your own custom
+    # command-line options
+    #
+    #   MiniTest::Unit.setup_options do |opts, options|
+    #     opts.on('-b') { options[:myopt] = true }
+    #   end
+
+    def self.setup_options &block
+      @@setup_options << block
     end
 
     ##
@@ -895,6 +908,12 @@ module MiniTest
       self.last_error = nil
     end
 
+    def setup_options opts, options
+      @@setup_options.each do |block|
+        block.call opts, options
+      end
+    end
+
     def process_args args = [] # :nodoc:
       options = {}
       orig_args = args.dup
@@ -920,6 +939,7 @@ module MiniTest
           options[:filter] = a
         end
 
+        setup_options opts, options
         opts.parse! args
         orig_args -= args
       end
